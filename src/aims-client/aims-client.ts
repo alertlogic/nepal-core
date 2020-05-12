@@ -50,6 +50,23 @@ export class AIMSClientInstance {
   }
 
   /**
+   * Create a user with details
+   * POST
+   * /aims/v1/:account_id/users
+   * "https://api.cloudinsight.alertlogic.com/aims/v1/12345678/users"
+   * -d '{ "name": "Bob Dobalina", "email": "admin@company.com", "phone": "12321312", "mobile_phone": "123-555-0123" }'
+   */
+  async createUserWithDetails(accountId: string, userDetails:AIMSUserDetails) {
+    const user = await this.client.post({
+      service_name: this.serviceName,
+      account_id: accountId,
+      path: '/users',
+      data: userDetails
+    });
+    return user as AIMSUser;
+  }
+
+  /**
    * Update user details
    * POST
    * /aims/v1/:account_id/users/:user_id
