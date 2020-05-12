@@ -57,13 +57,12 @@ export class AIMSClientInstance {
    * -d '{ "name": "Bob Dobalina", "email": "admin@company.com", "phone": "12321312", "mobile_phone": "123-555-0123" }'
    */
   async createUserWithDetails(accountId: string, userDetails:AIMSUserDetails) {
-    const user = await this.client.post({
+    return this.client.post<AIMSUser>({
       service_name: this.serviceName,
       account_id: accountId,
       path: '/users',
       data: userDetails
     });
-    return user as AIMSUser;
   }
 
   /**
