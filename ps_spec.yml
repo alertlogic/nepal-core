@@ -59,9 +59,7 @@ stages:
     -
         name: Master Push - Publish
         when:
-            - pull_request
-            - pull_request:
-                trigger_phrase: manualpublish
+            - push: ['master']
         image: node:13
         compute_size: small
         commands:
@@ -103,7 +101,7 @@ stages:
                  echo "PUBLISHING $PKGNAME $PKGVERSION"
                  npm run build
                 # git push origin $V_VERSION
-                 npm publish --access public --tag experimental
+                 npm publish --access public
                  
                  echo "Continuous Delivery release for ${PKGNAME}@${PKGVERSION}" > release_notes.txt
 
