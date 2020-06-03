@@ -439,14 +439,14 @@ export const AlLocationDictionary: AlLocationDescriptor[] =
      * Analytic Engine Configuration
      */
     {
-        locTypeId: AlLocation.GlobalAPI,
+        locTypeId: AlLocation.AETunerAPI,
         uri: 'https://aetuner.mdr.global.alertlogic.com',
         aspect: 'api',
         environment: 'production|beta-nav-prod|production-staging',
         keyword: 'aetuner'
     },
     {
-        locTypeId: AlLocation.GlobalAPI,
+        locTypeId: AlLocation.AETunerAPI,
         uri: 'https://aetuner.mdr.product.dev.alertlogic.com',
         aspect: 'api',
         environment: 'development|integration',
