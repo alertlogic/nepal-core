@@ -18,7 +18,7 @@ class AlSearchStylist {
      *  search_stylist will request results from EM search service by calling Search Results
      *  endpoint for the same account_id/uuid with the same query string params (offset/limit/etc) as passed to this endpoint.
      */
-    async searchStylist(accountId: string, uuid: string, additionalParams?: AlSearchResultsQueryParamsV2): Promise<AlSearchGetV2> {
+    searchStylist(accountId: string, uuid: string, additionalParams?: AlSearchResultsQueryParamsV2): Promise<AlSearchGetV2> {
         const fetchRequestArgs: APIRequestParams = {
             service_name: this.serviceName,
             account_id: accountId,
@@ -27,9 +27,7 @@ class AlSearchStylist {
         if (additionalParams) {
             fetchRequestArgs.params = additionalParams;
         }
-        const results = await ALClient.get(fetchRequestArgs);
-
-        return results as AlSearchGetV2;
+        return ALClient.get<AlSearchGetV2>(fetchRequestArgs);
     }
 }
 
