@@ -147,18 +147,18 @@ export interface AlCardstackCharacteristics
     /**
      * If true, indicates that filter values with no matching results should be hidden from the filter list.
      */
-    hideEmptyFilterValues:boolean;
+    hideEmptyFilterValues?:boolean;
 
     /**
      * If true, pagination will be executed locally
      */
-    localPagination:boolean;
+    localPagination?:boolean;
 
     /**
      * If true, search will be executed remotely (changes to search value will reload the view).  Otherwise, `searchableBy` will
      * be used to determine which entity properties the textual filter should be applied against.
      */
-    remoteSearch:boolean;
+    remoteSearch?:boolean;
 }
 
 /**
