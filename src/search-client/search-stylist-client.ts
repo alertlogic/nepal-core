@@ -27,6 +27,8 @@ class AlSearchStylist {
         if (additionalParams) {
             fetchRequestArgs.params = additionalParams;
         }
+        // In case we are trying to fetch csv we will return the blob file this
+        // will help the consumer to handle the response and export easily
         if (type === 'csv') {
             if ( !fetchRequestArgs.headers ) {
                 fetchRequestArgs.headers = {};
