@@ -1,9 +1,9 @@
-export interface AlDynamicFormContolElementOptions {
+export interface AlDynamicFormControlElementOptions {
     label: string;
     value: string;
 }
 
-export interface AlDynamicFormContolElement {
+export interface AlDynamicFormControlElement {
     updateNotAllowed?: boolean;
     type: string;
     property: string;
@@ -13,5 +13,5 @@ export interface AlDynamicFormContolElement {
     defaultValue?: string | string[] | boolean;
     validationPattern?: string;
     optional?: boolean;
-    options?: AlDynamicFormContolElementOptions[];
+    options?: AlDynamicFormControlElementOptions[];
 }
