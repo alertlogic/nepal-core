@@ -60,7 +60,7 @@ export const AlLocationDictionary: AlLocationDescriptor[] =
     },
 
     /**
-     * Gestapi API locations
+     * Gestalt api API locations
      */
     {
         locTypeId: AlLocation.GestaltAPI,
@@ -433,6 +433,40 @@ export const AlLocationDictionary: AlLocationDescriptor[] =
           clientID: '8eMblSx2Ead6nT7SeXffXbHT1I4JyAI4'
         },
         environment: 'development'
-    }
+    },
+
+    /**
+     * Analytic Engine Configuration
+     */
+    {
+        locTypeId: AlLocation.AETunerAPI,
+        uri: 'https://aetuner.mdr.global.alertlogic.com',
+        aspect: 'api',
+        environment: 'production|beta-nav-prod|production-staging',
+        keyword: 'aetuner'
+    },
+    {
+        locTypeId: AlLocation.AETunerAPI,
+        uri: 'https://aetuner.mdr.product.dev.alertlogic.com',
+        aspect: 'api',
+        environment: 'development|integration',
+        keyword: 'aetuner'
+    },
+
+    /**
+     * Integrations  API locations
+     */
+    {
+        locTypeId: AlLocation.IntegrationsAPI,
+        aspect: 'api',
+        uri: 'https://integrations.mdr.global.alertlogic.com',
+        environment: 'production|production-staging'
+    },
+    {
+        locTypeId: AlLocation.IntegrationsAPI,
+        aspect: 'api',
+        uri: 'https://integrations.mdr.product.dev.alertlogic.com',
+        environment: 'integration|development'
+    },
 ];
 
