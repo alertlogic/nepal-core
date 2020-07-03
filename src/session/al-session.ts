@@ -721,6 +721,7 @@ export class AlSessionInstance
     }
 
     protected async getFoxSnapshot( accountId:string, userId:string ):Promise<AlFoxSnapshot> {
+      if ( !this.options.useFox ) { return new AlFoxSnapshot(); }
       try {
         let rawData = await AlDefaultClient.get( {
           service_stack: AlLocation.GestaltAPI,
