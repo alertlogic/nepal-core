@@ -632,7 +632,10 @@ export class AlApiClient
 
   protected async calculateRequestURL( params: APIRequestParams ):Promise<string> {
     let fullPath:string = null;
-    if ( params.service_name && params.service_stack === AlLocation.InsightAPI && ! params.noEndpointsResolution ) {
+    if ( params.service_name
+      && (params.service_stack === AlLocation.InsightAPI
+      || params.service_stack === AlLocation.IntegrationsAPI)
+      && ! params.noEndpointsResolution ) {
       // Utilize the endpoints service to determine which location to use for this service/account pair
       const serviceCollection = await this.prepare( params );
       if ( serviceCollection.hasOwnProperty( params.service_name ) ) {
