@@ -656,7 +656,11 @@ export class AlApiClient
         fullPath += `/${params.version}`;
       } else if ( typeof( params.version ) === 'number' && params.version > 0 ) {
         fullPath += `/v${params.version.toString()}`;
+      } else {
+          console.log('calculateRequestURL version exists but did not match', params);   
       }
+    } else {
+        console.log('calculateRequestURL no version in params', params);   
     }
     if (params.account_id && params.account_id !== '0') {
       fullPath += `/${params.account_id}`;
