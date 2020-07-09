@@ -508,6 +508,8 @@ export class AlApiClient
         let configGlobal = Object.assign( {}, this.globalServiceParams  );       //  clever
         config = Object.assign( configGlobal, config  );
         config.url = await this.calculateRequestURL( config );
+      } else {
+        console.warn("Warning: not assign URL to request!", config );
       }
     }
     if (config.accept_header) {
