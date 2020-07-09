@@ -526,7 +526,7 @@ export class AlApiClient
       config.responseType = config.response_type as any;
       delete config.response_type;
     }
-    console.log('normalizeRequest end');
+    console.log('normalizeRequest end', config);
     return config;
   }
 
