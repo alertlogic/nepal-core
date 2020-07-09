@@ -535,7 +535,7 @@ export class AlApiClient
     }
     let existingEndpoints = this.getCachedValue<AlEndpointsServiceCollection>( cacheKey );
     if ( existingEndpoints ) {
-      console.log("getServiceEndpoints we found some in cache");
+        console.log("getServiceEndpoints we found some in cache");
         if ( ! requestList.find( serviceName => ! existingEndpoints.hasOwnProperty( serviceName ) ) ) {
             return existingEndpoints;   //  we already have all of the requested service in cache!  Yay!
         }
