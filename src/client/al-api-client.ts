@@ -180,6 +180,7 @@ export class AlApiClient
 
     let start = Date.now();
     try {
+      console.log('raw get', normalized);
       const request = this.axiosRequest( normalized );
       this.transientReadCache[cacheKey] = request;       //  store request instance to consolidate multiple requests for a single resource
       const response = await request;
@@ -504,7 +505,8 @@ export class AlApiClient
     if ( ! config.url ) {
       if ( config.hasOwnProperty("service_name" ) || config.hasOwnProperty("service_stack") ) {
         // If we are using endpoints resolution to determine our calculated URL, merge globalServiceParams into our configuration
-        config = Object.assign( {}, this.globalServiceParams, config );       //  clever
+        let configGlobal = Object.assign( {}, this.globalServiceParams  );       //  clever
+        config = Object.assign( configGlobal, config  );
         config.url = await this.calculateRequestURL( config );
       } else {
         console.warn("Warning: not assign URL to request!", config );
@@ -668,6 +670,7 @@ export class AlApiClient
     if (params.hasOwnProperty('path') && params.path.length > 0 ) {
       fullPath += ( params.path[0] === '/' ? '' : '/' )  + params.path;
     }
+    console.log('calculateRequestURL fullPath', fullPath);
     return fullPath;
   }
 
