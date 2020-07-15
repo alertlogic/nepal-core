@@ -39,7 +39,7 @@ class AlSearchStylist {
             fetchRequestArgs.responseType = 'blob';
 
             if (exportData) {
-                fetchRequestArgs.path = `/searches/${uuid}/export/${type}`
+                fetchRequestArgs.path = `/searches/${uuid}/export/${type}`;
             }
 
             return AlDefaultClient.get(fetchRequestArgs);
