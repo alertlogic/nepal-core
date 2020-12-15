@@ -49,6 +49,7 @@ import {
 import { AlClientBeforeRequestEvent } from './events';
 import { AIMSSessionDescriptor } from '../aims-client/types';
 import { AlRuntimeConfiguration, ConfigOption } from '../configuration';
+import * as tv4 from 'tv4';
 
 export type AlEndpointsServiceCollection = {[serviceName:string]:string};
 
@@ -830,6 +831,13 @@ export class AlApiClient
                                 if ( attemptIndex > 0 ) {
                                   console.warn(`Notice: resolved request for ${config.url} with retry logic.` );
                                 }
+                                // Just testing TV4
+                                let dataTest = {
+                                  name:"testName",
+                                  summary:"mySummary"
+                                };
+                                let valid = tv4.validate(dataTest,config.jsonSchema);
+                                console.log(valid,"test tv4");
                                 return response;
                               },
                               error => {
