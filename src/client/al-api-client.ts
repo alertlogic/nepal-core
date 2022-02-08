@@ -50,7 +50,9 @@ import {
 import {
     APIExecutionLogItem,
     APIExecutionLogSummary,
-    APIRequestParams
+    APIRequestParams,
+    AlInterceptionRule,
+    AlInterceptionRules,
 } from './types';
 import { AlClientBeforeRequestEvent } from './events';
 import { AIMSSessionDescriptor } from '../aims-client/types';
@@ -80,7 +82,7 @@ export class AlApiClient implements AlValidationSchemaProvider
   /**
    * The following list of services are the ones whose endpoints will need to be determined for the current context active residency location.
    */
-  protected static resolveByResidencyServiceList = [ "iris", "kalm", "ticketmaster", "tacoma" ];
+  protected static resolveByResidencyServiceList = [ "iris", "kalm", "ticketmaster", "tacoma", "responder", "responder-async" ];
 
   protected static defaultServiceParams: APIRequestParams = {
     service_stack:                  AlLocation.InsightAPI,  //  May also be AlLocation.GlobalAPI, AlLocation.EndpointsAPI, or ALLocation.LegacyUI
@@ -103,6 +105,12 @@ export class AlApiClient implements AlValidationSchemaProvider
   private endpointsGuard            =   new AlMutex();
   private endpointCache:AlEndpointsDictionary = {};
 
+  /* List of stacks (service_stack property in APIRequestParams) that should have endpoints resolution enabled by default */
+  private endpointsStackWhitelist = [
+      AlLocation.InsightAPI,
+      AlLocation.MDRAPI
+  ];
+
   /* Default request parameters */
   private globalServiceParams: APIRequestParams;
 
@@ -111,6 +119,8 @@ export class AlApiClient implements AlValidationSchemaProvider
 
   /* Internal execution log */
   private executionRequestLog:APIExecutionLogItem[] = [];
+
+  private interceptionRules?:AlInterceptionRules;
 
   constructor() {
       // temp to debug ie11
@@ -543,7 +553,7 @@ export class AlApiClient implements AlValidationSchemaProvider
     } );
   }
 
-  async acceptTermsOfService( sessionToken:string, ignoreWarning?:boolean ):Promise<AIMSSessionDescriptor> {
+  async acceptTermsOfService( sessionToken:string, ignoreWarning?:boolean, acceptTOS:boolean = true ):Promise<AIMSSessionDescriptor> {
     if ( ! ignoreWarning ) {
       console.warn("Warning: this low level authentication method is intended only for use by other services, and will not create a reusable session.  Are you sure you intended to use it?" );
     }
@@ -556,19 +566,19 @@ export class AlApiClient implements AlValidationSchemaProvider
         'X-AIMS-Session-Token': sessionToken
       },
       data: {
-        accept_tos: true
+        accept_tos: acceptTOS
       },
       withCredentials: true
     } );
   }
 
-  async acceptTermsOfServiceViaGestalt( sessionToken:string ):Promise<AIMSSessionDescriptor> {
+  async acceptTermsOfServiceViaGestalt( sessionToken:string, acceptTOS:boolean = true ):Promise<AIMSSessionDescriptor> {
     return this.post( {
       url: this.getGestaltAuthenticationURL(),
       withCredentials: true,
       data: {
         sessionToken: sessionToken,
-        acceptTOS: true
+        acceptTOS: acceptTOS
       }
     } );
   }
@@ -718,7 +728,11 @@ export class AlApiClient implements AlValidationSchemaProvider
       let response = await this.axiosRequest( endpointsRequest );
       Object.entries( response.data ).forEach( ( [ serviceName, endpointHost ] ) => {
           let host = endpointHost as string;
-          host = host.startsWith("http") ? host : `https://${host}`;      //  ensuring domains are prefixed with protocol
+          if ( host.startsWith("async.") ) { // naming convention for WebSocket services
+            host = `wss://${host}`; // add prefix for websocket protocol
+          } else if ( !host.startsWith("http") ) {
+            host = `https://${host}`;      //  ensuring domains are prefixed with protocol
+          }
           setJsonPath( this.endpointCache,
                        [ context.environment, accountId, serviceName, AlApiClient.defaultResidency ],
                        host );
@@ -736,13 +750,26 @@ export class AlApiClient implements AlValidationSchemaProvider
             null );
   }
 
+  public setInterceptionRules( rules:AlInterceptionRules|AlInterceptionRule[]|AlInterceptionRule|undefined ) {
+      if ( rules instanceof AlInterceptionRules ) {
+          this.interceptionRules = rules;
+      } else if ( rules === undefined ) {
+          delete this.interceptionRules;
+      } else if ( Array.isArray( rules ) ) {
+          this.interceptionRules = new AlInterceptionRules( rules );
+      } else if ( typeof( rules ) === 'object' ) {
+          this.interceptionRules = new AlInterceptionRules( [ rules ] );
+      }
+  }
+
   protected getGestaltAuthenticationURL():string {
       let residency = 'US';
       let environment = AlLocatorService.getCurrentEnvironment();
       if ( environment === 'development' ) {
           environment = 'integration';
       }
-      return AlLocatorService.resolveURL( AlLocation.AccountsUI, `/session/v1/authenticate`, { residency, environment } );
+      let authLocationId = AlRuntimeConfiguration.getOption( ConfigOption.GestaltDomain, AlLocation.AccountsUI );
+      return AlLocatorService.resolveURL( authLocationId, `/session/v1/authenticate`, { residency, environment } );
   }
 
 
@@ -750,7 +777,7 @@ export class AlApiClient implements AlValidationSchemaProvider
     let fullPath:string = null;
     if ( ! params.noEndpointsResolution
            && ! AlRuntimeConfiguration.getOption<boolean>( ConfigOption.DisableEndpointsResolution, false )
-           && ( params.target_endpoint || ( params.service_name && params.service_stack === AlLocation.InsightAPI ) ) ) {
+           && ( params.target_endpoint || ( params.service_name && this.endpointsStackWhitelist.includes( params.service_stack ) ) ) ) {
       // Utilize the endpoints service to determine which location to use for this service/account pair
       fullPath = await this.prepare( params );
     }
@@ -762,9 +789,9 @@ export class AlApiClient implements AlValidationSchemaProvider
       fullPath += `/${params.service_prefix}`;
     }
     if ( params.service_name ) {
-        if ( fullPath.includes( "{service}" ) ) {
+        if ( params.service_stack === AlLocation.MDRAPI && fullPath.includes( "{service}" ) ) {
             fullPath = fullPath.replace( "{service}", params.service_name );
-        } else {
+        } else if ( params.service_stack !== AlLocation.MDRAPI ) {
             fullPath += `/${params.service_name}`;
         }
     }
@@ -844,7 +871,12 @@ export class AlApiClient implements AlValidationSchemaProvider
           Object.entries(residencyLocations).forEach(([residencyName, residencyHost]) => {
               Object.entries(residencyHost).forEach(([datacenterId, endpointHost]) => {
                 let host = endpointHost as string;
-                host = host.startsWith("http") ? host : `https://${host}`;      //  ensuring domains are prefixed with protocol
+                if ( host.startsWith("async.") ) { // naming convention for WebSocket services
+                  host = `wss://${host}`; // add prefix for websocket protocol
+                  console.warn("host", host);
+                } else if ( !host.startsWith("http") ) {
+                  host = `https://${host}`;      //  ensuring domains are prefixed with protocol
+                }
                 setJsonPath( this.endpointCache,
                              [ context.environment, accountId, serviceName, residencyName ],
                              host );
@@ -907,7 +939,13 @@ export class AlApiClient implements AlValidationSchemaProvider
     return this.instance;
   }
 
-  protected onRequestResponse = ( response:AxiosResponse ):Promise<AxiosResponse> => {
+  protected onRequestResponse = async ( response:AxiosResponse ):Promise<AxiosResponse> => {
+    if ( this.interceptionRules ) {
+      let substitution = await this.interceptionRules.apply( response );
+      if ( substitution ) {
+        response = substitution;
+      }
+    }
     if ( response.status < 200 || response.status >= 400 ) {
       return this.onRequestError( response );
     }
@@ -1056,19 +1094,29 @@ export class AlApiClient implements AlValidationSchemaProvider
    * Normalize query parameters from config api request.
    */
   private normalizeQueryParams(params: any) {
-    let queryParams = '';
-    if ( params ) {
-      queryParams = Object.entries( params )
-      .map( ( [ p, v ] ) => {
-        if( Array.isArray(v) ) {
-          return v.map( ( arrayValue ) => {
-            return `${p}=${encodeURIComponent( typeof( arrayValue ) === 'string' ? arrayValue : arrayValue.toString() )}`;
-          }).join("&");
+    try {
+        let queryParams = '';
+        if ( params ) {
+          queryParams = Object.entries( params )
+                              .map( ( [ p, v ] ) => {
+                                if ( typeof( v ) === 'undefined' ) {
+                                    return null;
+                                }
+                                if( Array.isArray(v) ) {
+                                  return v.map( ( arrayValue ) => {
+                                    return `${p}=${encodeURIComponent( typeof( arrayValue ) === 'string' ? arrayValue : arrayValue.toString() )}`;
+                                  }).join("&");
+                                }
+                                return `${p}=${encodeURIComponent( typeof( v ) === 'string' ? v : v.toString() )}`;
+                              })
+                              .filter( p => p )
+                              .join("&");
         }
-        return `${p}=${encodeURIComponent( typeof( v ) === 'string' ? v : v.toString() )}`;
-      }).join("&");
+        return `${queryParams.length>0?'?'+queryParams:''}`;
+    } catch( e ) {
+        console.error( e );
+        return '';
     }
-    return `${queryParams.length>0?'?'+queryParams:''}`;
   }
 
   /**

@@ -34,7 +34,10 @@ export interface AlLocationContext {
 export class AlLocation
 {
     /**
-     * API Stacks
+     * API Stacks.  A note for "MDR" APIs: please do not create new locations
+     * for each individual API.  Instead, please use AlLocation.MDRAPI: this will use
+     * a generic MDR base URL and inject the service name into the target domain instead of its
+     * path, as with the IWS services.
      */
     public static GlobalAPI         = "global:api";
     public static InsightAPI        = "insight:api";
@@ -46,9 +49,10 @@ export class AlLocation
     public static ResponderWS       = "responder:ws";
     public static DistributorAPI    = "distributor:api";
     public static MDRAPI            = "mdr:api";
+    /* Read above: no new locations for *.mdr.alertlogic.com targets. */
 
     /**
-     * Modern UI Nodes
+     * UI Nodes
      */
     public static LegacyUI          = "cd14:ui";
     public static EmbeddedLegacyUI  = "cd14:embedded";
@@ -69,6 +73,7 @@ export class AlLocation
     public static DisputesUI        = "cd17:disputes";
     public static DashboardsUI      = "cd19:dashboards";
     public static ExposuresUI       = "cd17:exposures";
+    public static MagmaUI           = "cd21:magma";
 
     /**
      * Miscellaneous/External Resources
@@ -83,35 +88,35 @@ export class AlLocation
     /**
      * Generates location type definitions for residency-specific prod, integration, and dev versions of a UI
      */
-    public static uiNode( locTypeId:string, appCode:string, devPort:number ):AlLocationDescriptor[] {
-        return [
+    public static uiNode( locTypeId:string, appCode:string, devPort:number, magmaRedirectPath?: string ):AlLocationDescriptor[] {
+        let nodes:AlLocationDescriptor[] = [
             {
                 locTypeId: locTypeId,
                 environment: 'production',
                 residency: 'US',
                 uri: `https://console.${appCode}.alertlogic.com`,
-                keyword: appCode
+                keyword: appCode,
             },
             {
                 locTypeId: locTypeId,
                 environment: 'production',
                 residency: 'EMEA',
-                uri: `https://console.${appCode}.alertlogic.co.uk`,
-                keyword: appCode
+                uri: `https://console.${appCode}.alertlogic${locTypeId===AlLocation.MagmaUI ? '.com' : '.co.uk'}`,
+                keyword: appCode,
             },
             {
                 locTypeId: locTypeId,
                 environment: 'production-staging',
                 residency: 'US',
                 uri: `https://${appCode}-production-staging-us.ui-dev.product.dev.alertlogic.com`,
-                keyword: appCode
+                keyword: appCode,
             },
             {
                 locTypeId: locTypeId,
                 environment: 'production-staging',
                 residency: 'EMEA',
-                uri: `https://${appCode}-production-staging-uk.ui-dev.product.dev.alertlogic.com`,
-                keyword: appCode
+                uri: locTypeId === AlLocation.MagmaUI ? `https://${appCode}-production-staging-us.ui-dev.product.dev.alertlogic.com` : `https://${appCode}-production-staging-uk.ui-dev.product.dev.alertlogic.co.uk`,
+                keyword: appCode,
             },
             {
                 locTypeId: locTypeId,
@@ -123,15 +128,19 @@ export class AlLocation
                     `https://${appCode}-pr-*.ui-dev.product.dev.alertlogic.com`,
                     `https://*.o3-${appCode}.product.dev.alertlogic.com`
                 ],
-                keyword: appCode
+                keyword: appCode,
             },
             {
                 locTypeId: locTypeId,
                 environment: 'development',
                 uri: `http://localhost:${devPort}`,
-                keyword: 'localhost'
+                keyword: 'localhost',
             }
         ];
+        if ( magmaRedirectPath ) {
+            nodes.forEach( node => node.magmaRedirectPath = magmaRedirectPath );
+        }
+        return nodes;
     }
 }
 
@@ -159,6 +168,7 @@ export interface AlLocationDescriptor
     data?:any;                      //  Miscellaneous associated data
     weight?:number;                 //  Relative weight for resolution by URI.  In general, the more significant a node is the lower its weight should be.
     keyword?:string;                //
+    magmaRedirectPath?: string;
 }
 
 /**

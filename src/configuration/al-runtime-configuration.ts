@@ -1,4 +1,25 @@
-import { AlLocatorService, AlLocationContext, AlParamPreservationRule, AlRoute } from '../common/navigation/index';
+import { AlLocatorService, AlLocationContext, AlRoute } from '../common/navigation/index';
+
+/**
+ * Describes a set of paths where specific query parameters should be preserved across navigation events, or removed when
+ * navigation outside of the application area occurs.
+ */
+export interface AlParamPreservationRule {
+    /**
+     * One or more regexes describing logical paths to which these particular rules should be applied
+     */
+    applyTo:RegExp[];
+
+    /**
+     * Query parameters that should be preserved across requests
+     */
+    whitelist?:string[];
+
+    /**
+     * Query parameters that should be destroyed when navigating to a non-matching path
+     */
+    volatile?:string[];
+}
 
 /**
  * AlRuntimeConfiguration provides a single interface to control different behaviors across Alert Logic's UI surface area.
@@ -6,6 +27,8 @@ import { AlLocatorService, AlLocationContext, AlParamPreservationRule, AlRoute }
  *
  *   - ConfigOption.GestaltAuthenticate - if true, indicates that AlSession should authenticate via gestalt's session proxy; otherwise,
  *      authentication is performed directly against global AIMS.  Defaults to false.
+ *
+ *   - ConfigOption.GestaltDomain - If the GestaltAuthenticate option is enabled, this indicates which application will proxy requests to gestalt.
  *
  *   - ConfigOption.ResolveAccountMetadata - if true, AlSession's `setActingAccount` method will retrieve metadata (entitlements and account details)
  *      for the primary and acting account before resolving.  Otherwise, `setActingAccount` will resolve immediately.  Defaults to `true`.
@@ -33,10 +56,14 @@ import { AlLocatorService, AlLocationContext, AlParamPreservationRule, AlRoute }
  *      of navigational structures is used to determine which navigational options are available.  Defaults to 'null.'
  *
  *   - ConfigOption.NavigationDiagnostics - when enabled, causes the navigation layer to emit "helpful" commentary.
+ *
+ *   - ConfigOption.Headless and ConfigOption.ActingURI are provided to support angular universal pre-rendering, where there is no DOM
+ *      and no browser context, but the libraries need to be marshalled as though there were.
  */
 
 export enum ConfigOption {
     GestaltAuthenticate         = "session_via_gestalt",
+    GestaltDomain               = "session_gestalt_domain",
     ResolveAccountMetadata      = "session_metadata",
     ConsolidatedAccountResolver = "session_consolidated_resolver",
     DisableEndpointsResolution  = "client_disable_endpoints",
@@ -47,7 +74,9 @@ export enum ConfigOption {
     NavigationAssetPath         = "navigation_asset_path",
     NavigationDefaultAuthState  = "navigation_default_authentication",
     NavigationIntegratedAuth    = "navigation_use_integrated_auth",
-    NavigationDiagnostics       = "navigation_debug"
+    NavigationDiagnostics       = "navigation_debug",
+    Headless                    = "headless",
+    HeadlessActingURI           = "headless_uri",
 }
 
 /**
@@ -57,6 +86,7 @@ export class AlRuntimeConfiguration {
 
     protected static defaultOptions:{[optionKey:string]:string|number|boolean|unknown} = {
         'session_via_gestalt': false,
+        'session_gestalt_domain': 'cd17:accounts',
         'session_metadata': true,
         'session_consolidated_resolver': false,
         'disable_endpoints_resolution': false,
@@ -66,7 +96,10 @@ export class AlRuntimeConfiguration {
         'navigation_use_gestalt': true,
         'navigation_asset_path': 'assets/navigation',
         'navigation_default_authentication': null,
-        'navigation_debug': false
+        'navigation_debug': false,
+        'headless': false,
+        'headless_uri': '',
+        'strict_collision_handling': true,
     };
 
     protected static options:{[optionKey:string]:string|number|boolean|unknown} = Object.assign( {}, AlRuntimeConfiguration.defaultOptions );
@@ -105,6 +138,14 @@ export class AlRuntimeConfiguration {
     public static remapLocation( locationTypeId:string, baseURL:string, environment?:string, residency?:string ) {
         AlLocatorService.remapLocationToURI( locationTypeId, baseURL, environment, residency );
         AlRoute.reCache = {};
+    }
+
+    /**
+     * Enables headless mode, optionally assuming a specific "acting" uri
+     */
+    public static useHeadlessMode( actingUri:string = 'https://console.account.alertlogic.com' ) {
+        AlRuntimeConfiguration.setOption( ConfigOption.Headless, true );
+        AlRuntimeConfiguration.setOption( ConfigOption.HeadlessActingURI, actingUri );
     }
 
     /**

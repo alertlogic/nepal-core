@@ -47,7 +47,12 @@ export class AlGlobalizer
             if ( collisionHandling === true ) {
                 console.warn(`Warning: the global service ${name} has already been instantiated.  This probably indicates a packaging or bundling problem of some sort.` );
             } else if ( typeof( collisionHandling ) === 'string' ) {
-                throw new Error( collisionHandling );
+                let inCypress = typeof( window ) !== 'undefined' && typeof( window['Cypress'] ) !== 'undefined';
+                if ( ! inCypress ) {
+                    throw new Error( collisionHandling );
+                } else {
+                    console.warn(`Warning: the global service ${name} has already been instantiated; ignoring duplication.` );
+                }
             } else {
                 return storage[name];
             }

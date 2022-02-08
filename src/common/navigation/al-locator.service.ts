@@ -1,6 +1,6 @@
-import { AlGlobalizer } from '../utility/al-globalizer';
 import { AlLocationDictionary } from './al-location.dictionary';
 import { AlLocatorMatrix } from './al-locator.types';
+import { AlGlobalizer } from '../utility/al-globalizer';
 
 /**
  * @public
