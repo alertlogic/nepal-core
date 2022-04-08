@@ -716,7 +716,7 @@ export class AlApiClient implements AlValidationSchemaProvider
    * The previous implementation ALWAYS calculated service endpoints for the default location of the primary account for the logged in user and so any roll ups for views for child accounts never worked eva!!!
    *
    */
-  public async resolveDefaultEndpoints( accountId:string, serviceList:string[] ) {
+  public async resolveDefaultEndpoints( accountId:string, serviceList:string[], returnEndpointsLookup?: boolean ) {
     try {
       const context = AlLocatorService.getContext();
       const endpointsRequest:APIRequestParams = {
@@ -726,6 +726,7 @@ export class AlApiClient implements AlValidationSchemaProvider
         aimsAuthHeader: true
       };
       let response = await this.axiosRequest( endpointsRequest );
+      let endpointsLookup: AlEndpointsDictionary = {};
       Object.entries( response.data ).forEach( ( [ serviceName, endpointHost ] ) => {
           let host = endpointHost as string;
           if ( host.startsWith("async.") ) { // naming convention for WebSocket services
@@ -733,11 +734,14 @@ export class AlApiClient implements AlValidationSchemaProvider
           } else if ( !host.startsWith("http") ) {
             host = `https://${host}`;      //  ensuring domains are prefixed with protocol
           }
-          setJsonPath( this.endpointCache,
+          setJsonPath( returnEndpointsLookup ? endpointsLookup : this.endpointCache,
                        [ context.environment, accountId, serviceName, AlApiClient.defaultResidency ],
                        host );
       } );
       this.endpointCache;
+      if(returnEndpointsLookup) {
+          return endpointsLookup;
+      }
     } catch ( e ) {
       this.fallbackResolveEndpoints( accountId, serviceList, AlApiClient.defaultResidency );
     }
