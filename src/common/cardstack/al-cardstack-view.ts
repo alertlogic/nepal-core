@@ -724,10 +724,10 @@ export abstract class AlCardstackView< EntityType=any,
             if ( existing.values.includes( vDescriptor ) ) {
                 return;     //  no change
             }
-            if(resetActiveFilters){
+            if ( resetActiveFilters ) {
                 existing.values = [];
                 pDescriptor.values.forEach(value => {
-                    if(vDescriptor.value !== value.value){
+                    if ( vDescriptor.value !== value.value ) {
                         value.activeFilter = false;
                     }
                 });
