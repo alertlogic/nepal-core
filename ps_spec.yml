@@ -113,7 +113,7 @@ stages:
                  echo "NOT PUBLISHING $PKGNAME $PKGVERSION"
               fi
             - echo done
-        output:
+        outputs:
             file: ./bundles/*
     - 
         name: mendscan
