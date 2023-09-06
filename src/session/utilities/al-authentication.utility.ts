@@ -255,7 +255,7 @@ export class AlAuthenticationUtility {
         tokenInfo.token = fortraSession.accessToken;                    //  token_info endpoint doesn't include this property in its response
         let outcome:AIMSSessionDescriptor = {
             fortraSession,
-            authentication: tokenInfo
+            authentication: tokenInfo,
         };
         return outcome;
     }
