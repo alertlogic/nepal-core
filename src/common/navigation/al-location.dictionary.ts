@@ -266,13 +266,7 @@ export const AlLocationDictionary: AlLocationDescriptor[] =
         uri: 'https://console.iris.alertlogic.com',
         environment: 'production',
         residency: 'US',
-        keyword: 'iris',
-    },
-    {
-        locTypeId: AlLocation.IrisUI,
-        uri: 'https://console.iris.alertlogic.com',
-        environment: 'production',
-        residency: 'EMEA',
+        aliases: [ `https://console.iris.alertlogic.co.uk` ],
         keyword: 'iris',
     },
     {
@@ -280,13 +274,7 @@ export const AlLocationDictionary: AlLocationDescriptor[] =
         uri: 'https://iris-ui-production-staging-us.ui-dev.product.dev.alertlogic.com',
         environment: 'production-staging',
         residency: 'US',
-        keyword: 'iris',
-    },
-    {
-        locTypeId: AlLocation.IrisUI,
-        uri: 'https://iris-ui-production-staging-us.ui-dev.product.dev.alertlogic.com',
-        environment: 'production-staging',
-        residency: 'EMEA',
+        aliases: [ `https://iris-ui-production-staging-uk.ui-dev.product.dev.alertlogic.com` ],
         keyword: 'iris',
     },
     {
