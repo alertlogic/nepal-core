@@ -22,7 +22,7 @@ export interface AlEntitlementRecord
 }
 
 /**
- * Default values of the data retention policy 
+ * Default values of the data retention policy
  */
 export enum DefaultDataRetentionPolicy {
     Value = 13,
