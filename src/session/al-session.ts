@@ -38,7 +38,7 @@ import {
     deepMerge
 } from "../common/utility";
 import { SubscriptionsClient } from "../subscriptions-client";
-import { AlEntitlementCollection } from "../subscriptions-client/types";
+import { AlEntitlementCollection, DefaultDataRetentionPolicy } from "../subscriptions-client/types";
 import {
     AlActingAccountChangedEvent,
     AlActingAccountResolvedEvent,
@@ -628,6 +628,31 @@ export class AlSessionInstance
     }
 
     /**
+     * Get the data retention period in months based on the product's entitlement.
+     * If the entitlement is not available or the unit is unrecognized, the default value is used.
+     * @returns {number} The data retention period in months.
+     */
+    public getDataRetetionPeriod(): number {
+      try {
+        const product = this.resolvedAccount.entitlements.getProduct( 'log_data_retention' );
+        let durationUnit = product?.value_type || DefaultDataRetentionPolicy.Unit;
+        let durationValue = product?.value || DefaultDataRetentionPolicy.Value;
+    
+        if ( !['months', 'years'].includes( durationUnit ) ) {
+          console.warn( "The retention policy period is not recognized, the default retention period will be used." );
+          durationUnit = DefaultDataRetentionPolicy.Unit;
+          durationValue = DefaultDataRetentionPolicy.Value;
+        }
+    
+        const durationMonths = durationUnit === 'years' ? durationValue * 12 : durationValue;
+        return durationMonths;
+      } catch ( error ) {
+        console.warn( "An error occurred while fetching the retention policy, the default retention period will be used." );
+        return DefaultDataRetentionPolicy.Value;
+      }
+    }
+
+    /**
      * Convenience method to retrieve the array of accounts managed by the current acting account (or a specific
      * other account, if specified)..
      * See caveats for `AlSession.authenticated` method, which also apply to this method.
@@ -757,6 +782,8 @@ export class AlSessionInstance
 
       if ( account.id !== this.getPrimaryAccountId() ) {
         dataSources.push( SubscriptionsClient.getEntitlements( account.id ) );
+        // Ensures the retrieval of the retention period, including the default value
+        dataSources.push( SubscriptionsClient.getEntitlements( account.id, { product_family: 'log_data_retention' } ) );
       }
 
       return Promise.all( dataSources )
@@ -767,6 +794,7 @@ export class AlSessionInstance
                         let actingEntitlements:AlEntitlementCollection;
                         if ( dataObjects.length > 3 ) {
                           actingEntitlements                                =   dataObjects[3];
+                          actingEntitlements.merge( dataObjects[4] );
                         } else {
                           actingEntitlements                                =   primaryEntitlements;
                         }
