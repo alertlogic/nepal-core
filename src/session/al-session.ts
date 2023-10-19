@@ -782,8 +782,6 @@ export class AlSessionInstance
 
       if ( account.id !== this.getPrimaryAccountId() ) {
         dataSources.push( SubscriptionsClient.getEntitlements( account.id ) );
-        // Ensures the retrieval of the retention period, including the default value
-        dataSources.push( SubscriptionsClient.getEntitlements( account.id, { product_family: 'log_data_retention' } ) );
       }
 
       return Promise.all( dataSources )
@@ -794,7 +792,6 @@ export class AlSessionInstance
                         let actingEntitlements:AlEntitlementCollection;
                         if ( dataObjects.length > 3 ) {
                           actingEntitlements                                =   dataObjects[3];
-                          actingEntitlements.merge( dataObjects[4] );
                         } else {
                           actingEntitlements                                =   primaryEntitlements;
                         }
