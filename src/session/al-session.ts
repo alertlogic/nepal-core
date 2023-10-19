@@ -637,13 +637,13 @@ export class AlSessionInstance
         const product = this.resolvedAccount.entitlements.getProduct( 'log_data_retention' );
         let durationUnit = product?.value_type || DefaultDataRetentionPolicy.Unit;
         let durationValue = product?.value || DefaultDataRetentionPolicy.Value;
-    
+
         if ( !['months', 'years'].includes( durationUnit ) ) {
           console.warn( "The retention policy period is not recognized, the default retention period will be used." );
           durationUnit = DefaultDataRetentionPolicy.Unit;
           durationValue = DefaultDataRetentionPolicy.Value;
         }
-    
+
         const durationMonths = durationUnit === 'years' ? durationValue * 12 : durationValue;
         return durationMonths;
       } catch ( error ) {
