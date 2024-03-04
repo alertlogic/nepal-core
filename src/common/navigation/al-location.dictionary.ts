@@ -611,8 +611,13 @@ export const AlLocationDictionary: AlLocationDescriptor[] =
      */
     {
         locTypeId: AlLocation.FortraPlatform,
+        uri: 'https://foundation.foundation-dev.cloudops.fortradev.com',
+        environment: 'development',
+    },
+    {
+        locTypeId: AlLocation.FortraPlatform,
         uri: 'https://foundation.foundation-stage.cloudops.fortradev.com',
-        environment: 'integration|development',
+        environment: 'integration',
     },
     {
         locTypeId: AlLocation.FortraPlatform,
