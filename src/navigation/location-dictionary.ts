@@ -707,7 +707,7 @@ export const AlLocationDictionary: AlLocationDescriptor[] =
     {
         locTypeId: AlLocation.FortraPlatform,
         uri: 'https://foundation.foundation-stage.cloudops.fortradev.com',
-        environment: 'integration|embedded-integration|development',
+        environment: 'integration|embedded-integration',
         external: true,
     },
     {
