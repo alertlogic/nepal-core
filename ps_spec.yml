@@ -12,6 +12,7 @@ stages:
         commands:
             - echo //registry.npmjs.org/:_authToken=$NPM_TOKEN > .npmrc
             - cat .npmrc
+            - npm view @al/core --registry=https://registry.npmjs.org
             - npm ci
             # - curl https://intoli.com/install-google-chrome.sh | bash
             # - mv /usr/bin/google-chrome-stable /usr/bin/google-chrome
