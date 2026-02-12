@@ -15,7 +15,7 @@ stages:
             - npm config get registry
             - npm access list packages al
             - npm view @al/core --registry=https://registry.npmjs.org
-            - npm ci
+            - npm install --loglevel=silly
             # - curl https://intoli.com/install-google-chrome.sh | bash
             # - mv /usr/bin/google-chrome-stable /usr/bin/google-chrome
             - wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
