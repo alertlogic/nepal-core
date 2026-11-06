@@ -2,7 +2,7 @@ import { WebAuth } from 'auth0-js';
 import { beforeEach, afterEach, expect, describe, test, vi } from 'vitest';
 
 import { exampleSession } from '../mocks';
-import { AlIdentityProviders, AlErrorHandler } from '@al/core';
+import { AlIdentityProviders, AlErrorHandler, AlAuthenticationResult } from '@al/core';
 
 describe('AlIdentityProviders', () => {
     let identityProviders:AlIdentityProviders;
@@ -37,6 +37,13 @@ describe('AlIdentityProviders', () => {
     } );
 
     describe(".warmup()", () => {
+        test( "should not initialize a browser IdP for ordinary URLs", async () => {
+            const result = await identityProviders.warmup( `https://console.magma.product.dev.alertlogic.com/` );
+            expect( result ).to.equal( undefined );
+            expect( identityProviders ).not.to.have.property( 'getKeycloak' );
+            expect( ( AlAuthenticationResult as any ).FortraIdPRequired ).to.equal( undefined );
+        } );
+
         test( "should return undefined for most URLs", () => {
             const url1 = `https://console.magma.product.dev.alertlogic.com/`
                         + `?state=1656b907-98d2-4d60-8ad2-ef95227c363e`
