@@ -186,3 +186,57 @@ describe.skip('AlAuthenticationUtility', () => {
     } );
 
 } );
+
+describe('Fortra platform authentication', () => {
+    beforeEach(() => {
+        AlAuthenticationUtility['convertedSession'] = undefined;
+        AlAuthenticationUtility['conversionReq'] = undefined;
+        AlRuntimeConfiguration.reset();
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+        AlRuntimeConfiguration.reset();
+    });
+
+    test('authenticates against AIMS with a host-provided access token', async () => {
+        AlRuntimeConfiguration.options.embeddedFortraApp = true;
+        const accessToken = 'host-platform-access-token';
+        const getSpy = vi.spyOn(AlDefaultClient, 'get').mockResolvedValue(exampleSession.authentication);
+        const authentication = new AlAuthenticationUtility();
+        const session = await authentication.authenticateViaAIMSFromFortra({
+            identityToken: 'host-platform-identity-token',
+            accessToken,
+            inPlatform: true,
+            refreshToken: 'host-platform-refresh-token'
+        });
+
+        expect(getSpy).toHaveBeenCalledWith(expect.objectContaining({
+            headers: { Authorization: `Bearer ${accessToken}` },
+            aimsAuthHeader: false
+        }));
+        expect(session.authentication.token).to.equal(accessToken);
+        expect(session.fortraSession.accessToken).to.equal(accessToken);
+        expect(session.fortraSession.inPlatform).to.equal(true);
+        expect(session.fortraSession.refreshToken).to.equal('host-platform-refresh-token');
+    });
+
+    test('converts an embedded platform session using host cookies', async () => {
+        AlRuntimeConfiguration.options.embeddedFortraApp = true;
+        const postSpy = vi.spyOn(AlDefaultClient, 'post').mockResolvedValue(exampleSession.authentication);
+        const authentication = new AlAuthenticationUtility();
+
+        await authentication.convertFortraSession({
+            identityToken: 'host-platform-identity-token',
+            accessToken: 'host-platform-access-token',
+            inPlatform: true
+        });
+
+        expect(postSpy).toHaveBeenCalledWith(expect.objectContaining({
+            path: '/authenticate/convert_token',
+            withCredentials: true,
+            aimsAuthHeader: false
+        }));
+        expect(postSpy.mock.calls[0][0].data).to.equal(undefined);
+    });
+});

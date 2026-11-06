@@ -20,7 +20,6 @@ export enum AlAuthenticationResult {
     MFAVerificationRequired = 'mfa_verification_required',
     TOSAcceptanceRequired   = 'eula_acceptance_required',
     TOSReacceptanceRequired = 'eula_reacceptance_required',
-    FortraIdPRequired       = 'fidp_required',
     InvalidCredentials      = 'failed'
 }
 
@@ -343,9 +342,6 @@ export class AlAuthenticationUtility {
                 this.state.sessionToken = error.headers['x-aims-session-token'];
                 this.state.deferralTOSPeriodEnd = getJsonPath<string>( error, 'data.tos_deferral_period_end', null );
                 return true;
-            } else if ( this.requiresFortraIdP( error ) ) {
-                this.state.result = AlAuthenticationResult.FortraIdPRequired;
-                return true;
             } else if( error.status === 400) {
                 this.state.result = AlAuthenticationResult.AccountLocked;
                 return true;
@@ -401,14 +397,6 @@ export class AlAuthenticationUtility {
             && response.data !== null
             && 'error' in response.data
             && response.data.error === 'reaccept_tos_required';
-    }
-
-    protected requiresFortraIdP( response:AxiosResponse<any> ):boolean {
-        return response.status === 401
-            && typeof( response.data ) === 'object'
-            && response.data !== null
-            && 'error' in response.data
-            && response.data.error === 'fortra_required';
     }
 
 }

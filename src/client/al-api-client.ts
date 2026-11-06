@@ -981,7 +981,7 @@ export class AlApiClient
         try {
             await this.beforeRequest();
         } catch( e ) {
-            //  This may be part of keycloak-js's "normal" behavior when token refresh fails?  Don't let it stop the show
+          //  A beforeRequest callback failure should not prevent the request from being sent.
             console.warn(`WARNING: ignoring exception thrown in beforeRequest callback`, e );
         }
     }

@@ -6,24 +6,17 @@
  */
 
 import { WebAuth } from 'auth0-js';
-import Keycloak, { KeycloakLoginOptions, KeycloakOnLoad } from 'keycloak-js';
-import { AlBehaviorPromise, AlCabinet, AlStopwatch } from '../../common';
+import { AlStopwatch } from '../../common';
 import { AlLocation, AlLocatorService } from '../../navigation';
 import { AlErrorHandler } from '../../error-handler';
-import { AlRuntimeConfiguration } from '../../configuration';
-import { AlDefaultClient } from '../../client';
-import { AlConduitClient } from './al-conduit-client';
 
 export class AlIdentityProviders
 {
     /**
-     *  Keycloak and Auth0 client instances
+    *  Auth0 client instance
      */
-    protected static keycloak:Keycloak = undefined;
     protected static auth0:WebAuth = undefined;
     protected static cachedA0UserInfo:{[accessKey:string]:any};
-    protected storage = AlCabinet.persistent("alnav");
-    protected allIsLost = false;
 
     constructor() {
     }
@@ -35,7 +28,7 @@ export class AlIdentityProviders
         if ( ! /state=([a-zA-Z0-9\-_]+)/.test( url ) ) {    //  this parameter must always be present
             return false;
         }
-        if ( /iss=([^&]+)/.test( url ) ) {                  //  this parameter suggests we're in a keycloak redirection flow
+        if ( /iss=([^&]+)/.test( url ) ) {                  //  an external issuer indicates a different OIDC provider callback
             return false;
         }
         return true;
@@ -46,14 +39,14 @@ export class AlIdentityProviders
     }
 
     /**
-     * This method initializes IdP clients using a heuristic mechanism differentiating auth0 from keycloak.
-     * This allows those clients to initiate and/or respond to redirection based OIDC authentication before the application
+     * This method initializes Auth0 using a heuristic mechanism.
+     * This allows Auth0 to respond to redirection-based authentication before the application
      * itself is bootstrapped and the angular router assumes control of the URL.
      */
 
     public async warmup( url?:string ):Promise<string|undefined> {
         let targetURL = url ?? window?.location?.href ?? '';
-        if ( AlIdentityProviders.inAuth0Workflow(window?.location?.href) ) {
+        if ( AlIdentityProviders.inAuth0Workflow(targetURL) ) {
             try {
                 let authenticator = await this.getAuth0Authenticator();
                 let config = this.getAuth0Config( { usePostMessage: true, prompt: 'none' } );
@@ -62,29 +55,7 @@ export class AlIdentityProviders
                 AlErrorHandler.log(e, "IdP Warmup: auth0 initialization failed", "auth" );
             }
             return this.maybeRewriteBrokenURL( targetURL );
-        } else if ( ! AlIdentityProviders.usingTokenInjection( targetURL ) ) {
-            await this.getKeycloak();
         }
-    }
-
-    /**
-     * Retrieve a keycloak authentication interface.
-     */
-    public async getKeycloak():Promise<Keycloak> {
-        if ( ! AlIdentityProviders.keycloak ) {
-            const fortraPlatformUri = AlLocatorService.resolveURL( AlLocation.FortraPlatform, '/idp' );
-            AlIdentityProviders.keycloak = new Keycloak( {
-                url: fortraPlatformUri,
-                realm: 'products',
-                clientId: 'alertlogic-aims-public',
-            } );
-            if ( AlRuntimeConfiguration.options.embeddedFortraApp ) {
-                await AlIdentityProviders.keycloak.init( { enableLogging: true } );     //  prevent redirections when running as an embedded application
-            } else {
-                await this.innerGetKeyCloak( AlIdentityProviders.keycloak );            //  allows redirection to check for session existence
-            }
-        }
-        return AlIdentityProviders.keycloak;
     }
 
     /**
@@ -154,46 +125,6 @@ export class AlIdentityProviders
                                 },
                                 merge );
     }
-
-    /**
-     * Uses a race to make sure that keycloak initialization doesn't time out -- since a misconfigured client can cause the
-     * promise to hang indefinitely.
-     */
-    protected async innerGetKeyCloak( cloak:Keycloak, timeout:number = 5000 ):Promise<void> {
-        return Promise.race( [ AlStopwatch.promise( timeout ),
-                               new Promise<void>( async ( resolve, reject ) => {
-                                    let cloakPhase = this.storage.get("cloakInitPhase", 0 );
-                                    const baseLocation = window.location.origin + ( window.location.pathname === '/' ? '' : window.location.pathname );     //  fix double slash but support apps in subdirectories
-
-                                    let onLoad:KeycloakOnLoad|undefined = cloakPhase === 0 ? "check-sso" : undefined;
-                                    let silentCheckSsoRedirectUri = cloakPhase === 0 ? `${baseLocation}/sso-check.html` : undefined;
-                                    this.storage.set("cloakInitPhase", cloakPhase + 1, 10 ).synchronize();  //  doing this preemptively should prevent us from
-
-                                    if ( cloakPhase > 5 ) {
-                                        this.allIsLost = true;
-                                        AlErrorHandler.log("Refusing to initialize keycloak after too many redirect cycles", "auth" );
-                                        resolve();
-                                    } else {
-                                        AlErrorHandler.log(`Initializing cloak in phase [${cloakPhase}]: ${onLoad} (uri: ${window.location.href})`, "auth");
-                                        let initResult = await cloak.init( {
-                                                                        onLoad,
-                                                                        silentCheckSsoRedirectUri,
-                                                                        enableLogging: true,
-                                                                        checkLoginIframe: true,
-                                                                        checkLoginIframeInterval: 30,
-                                                                        pkceMethod: 'S256',
-                                                                        responseMode: "query",
-                                                                        messageReceiveTimeout: 5000
-                                                                    } );
-                                        if ( ! initResult && cloakPhase === 0 ) {
-                                            cloak.login( { prompt: 'none', redirectUri: window.location.href } );
-                                        } else {
-                                            resolve();
-                                        }
-                                    }
-                               } ) ] );
-    }
-
 
     protected getAuth0UserInfo = ( authenticator:WebAuth, userAccessToken:string, callback:(error:any, userInfo:any)=>void ) => {
         if ( AlIdentityProviders.cachedA0UserInfo.hasOwnProperty( userAccessToken ) ) {
